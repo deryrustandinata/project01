@@ -2441,108 +2441,45 @@
         }
 
         // ============================================
-        // AUDIO - Space Ambient
-        // ============================================
-        const audioToggle = document.getElementById('audioToggle');
-        const audioVisualizer = document.getElementById('audioVisualizer');
+// AUDIO - File MP3 Sendiri
+// ============================================
+const audioToggle = document.getElementById('audioToggle');
+const audioVisualizer = document.getElementById('audioVisualizer');
+let spaceAudio = new Audio('backsound.mp3'); // ← GANTI NAMA FILE INI
+let isAudioPlaying = false;
 
-        function initAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
+// Pengaturan audio
+spaceAudio.loop = true;
+spaceAudio.volume = 0.3;
 
-        function createSpaceAmbient() {
-            initAudio();
-            const frequencies = [55, 110, 165, 220, 330]; // Deep space drone frequencies
-            
-            frequencies.forEach((freq, i) => {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                
-                osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-                osc.frequency.setValueAtTime(freq, audioContext.currentTime);
-                
-                gain.gain.setValueAtTime(0.03, audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.02, audioContext.currentTime + 2);
-                
-                // LFO for movement
-                const lfo = audioContext.createOscillator();
-                const lfoGain = audioContext.createGain();
-                lfo.frequency.setValueAtTime(0.1 + i * 0.05, audioContext.currentTime);
-                lfoGain.gain.setValueAtTime(5, audioContext.currentTime);
-                lfo.connect(lfoGain);
-                lfoGain.connect(osc.frequency);
-                lfo.start();
-                
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                osc.start();
-                
-                audioOscillators.push({ osc, gain, lfo, lfoGain });
-            });
+// Restore volume dari localStorage
+if (localStorage.getItem('audioVolume')) {
+    spaceAudio.volume = parseFloat(localStorage.getItem('audioVolume'));
+}
 
-            // Add noise for texture
-            const bufferSize = audioContext.sampleRate * 2;
-            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = (Math.random() * 2 - 1) * 0.01;
-            }
-            
-            const noise = audioContext.createBufferSource();
-            noise.buffer = buffer;
-            noise.loop = true;
-            const noiseGain = audioContext.createGain();
-            noiseGain.gain.setValueAtTime(0.015, audioContext.currentTime);
-            
-            // Filter for spacey sound
-            const filter = audioContext.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(400, audioContext.currentTime);
-            
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            noiseGain.connect(audioContext.destination);
-            noise.start();
-            
-            audioOscillators.push({ osc: noise, gain: noiseGain, filter });
-        }
-
-        function stopSpaceAmbient() {
-            audioOscillators.forEach(({ osc, gain, lfo, lfoGain, filter }) => {
-                try {
-                    const now = audioContext.currentTime;
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
-                    setTimeout(() => {
-                        osc.stop();
-                        if (lfo) lfo.stop();
-                    }, 1000);
-                } catch(e) {}
-            });
-            audioOscillators = [];
-        }
-
-        audioToggle.addEventListener('click', () => {
-            if (isAudioPlaying) {
-                stopSpaceAmbient();
-                audioToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
-                audioToggle.classList.remove('active');
-                audioVisualizer.classList.remove('active');
-            } else {
-                createSpaceAmbient();
-                audioToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
-                audioToggle.classList.add('active');
-                audioVisualizer.classList.add('active');
-            }
-            isAudioPlaying = !isAudioPlaying;
-            localStorage.setItem('audioPlaying', isAudioPlaying);
+audioToggle.addEventListener('click', () => {
+    if (isAudioPlaying) {
+        spaceAudio.pause();
+        audioToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        audioToggle.classList.remove('active');
+        audioVisualizer.classList.remove('active');
+    } else {
+        spaceAudio.play().catch(e => {
+            console.log('Audio play failed:', e);
+            alert('Klik lagi untuk memutar audio (browser memerlukan interaksi user)');
         });
+        audioToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+        audioToggle.classList.add('active');
+        audioVisualizer.classList.add('active');
+    }
+    isAudioPlaying = !isAudioPlaying;
+    localStorage.setItem('audioPlaying', isAudioPlaying);
+});
 
-        // Restore audio state
-        if (localStorage.getItem('audioPlaying') === 'true') {
-            setTimeout(() => audioToggle.click(), 3000);
-        }
+// Auto-play saat load (jika sebelumnya aktif)
+if (localStorage.getItem('audioPlaying') === 'true') {
+    setTimeout(() => audioToggle.click(), 2000);
+}
 
         // ============================================
         // NAVBAR SCROLL EFFECT
