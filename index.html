@@ -1657,7 +1657,7 @@
                     <i class="fas fa-paper-plane"></i>
                     Hubungi Saya
                 </a>
-                <a href="#" class="btn btn-glass" onclick="downloadCV(); return false;">
+                <a href="#" class="btn btn-glass" onclick="01_CV.pdf(); return false;">
                     <i class="fas fa-download"></i>
                     Unduh CV
                 </a>
@@ -3163,52 +3163,9 @@
         // ============================================
         // DOWNLOAD CV
         // ============================================
-        function downloadCV() {
+        function 01_CV.pdf() {
             // Create a simple CV text content
             const cvContent = `
-DERY RUSTAN DINATA SAFIUDDIN
-============================
-Lulusan S1 Manajemen | Spesialis Administrasi & Data
-
-KONTAK
-------
-Email: dery.rustan@email.com
-Telepon: +62 821-8868-1185
-Alamat: Jl. Pattimura, Watulondo, Kota Kendari
-LinkedIn: linkedin.com/in/deryrustan
-
-PENDIDIKAN
-----------
-Universitas Halu Oleo (2020-2025)
-- Sarjana Manajemen, IPK 3.48/4.00
-- Skripsi: Peran AI ChatGPT dalam Pengembangan SDM
-
-PENGALAMAN KERJA
-----------------
-PT. Bank Negara Indonesia Tbk. (Persero) | Okt 2025 - Apr 2026
-Posisi: Magang Credit Operation
-- End-to-end process kredit perbankan
-- Sistem core banking & data nasabah real-time
-- Pengelolaan dokumen fisik & digital
-- Verifikasi dokumen untuk audit internal
-- Pengolahan data dengan Excel (Pivot, VLOOKUP)
-- Laporan administrasi harian
-
-KEAHLIAN
---------
-Microsoft Office: Excel, Word, PowerPoint, Outlook
-Google Workspace: Sheets, Docs
-HRIS: Oracle HCM Cloud
-Data: SPSS, Data Analysis, Pivot Table, VLOOKUP/XLOOKUP
-Administrasi: Pengelolaan berkas, Arsip digital, Dokumentasi
-Bahasa: Indonesia (Native), Inggris (Intermediate)
-
-SERTIFIKASI
------------
-- Kementerian Ketenagakerjaan RI
-- PT Bank Negara Indonesia (Persero) Tbk
-            `.trim();
-
             const blob = new Blob([cvContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
