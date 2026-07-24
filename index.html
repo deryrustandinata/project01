@@ -1589,6 +1589,74 @@
             visibility: visible;
             transform: translateX(-50%) translateY(-4px);
         }
+
+/* Volume Slider */
+.volume-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    border-right: 1px solid var(--glass-border);
+    margin-right: 5px;
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transition: all 0.4s ease;
+}
+
+.volume-wrapper.show {
+    opacity: 1;
+    width: auto;
+    overflow: visible;
+}
+
+#volumeSlider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--primary-glow);
+    transition: all 0.3s ease;
+}
+
+#volumeSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+
+#volumeSlider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* Tampilkan slider saat audio aktif */
+.control-btn.active ~ .volume-wrapper,
+.control-btn.active + .volume-wrapper,
+.volume-wrapper.active {
+    opacity: 1;
+    width: auto;
+    overflow: visible;
+}        
     </style>
 </head>
 <body>
@@ -1630,13 +1698,21 @@
         <button class="nav-link" onclick="openModal('contact')">Kontak</button>
         
         <div class="nav-controls">
-            <button class="control-btn" id="themeToggle" data-tooltip="Ganti Tema">
-                <i class="fas fa-moon"></i>
-            </button>
-            <button class="control-btn" id="audioToggle" data-tooltip="Suara Luar Angkasa">
-                <i class="fas fa-volume-mute"></i>
-            </button>
-        </div>
+<div class="nav-controls">
+    <!-- Slider Volume BARU -->
+    <div class="volume-wrapper" id="volumeWrapper">
+        <i class="fas fa-volume-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+        <input type="range" min="0" max="1" step="0.05" value="0.3" id="volumeSlider">
+        <i class="fas fa-volume-up" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+    </div>
+    
+    <button class="control-btn" id="themeToggle" data-tooltip="Ganti Tema">
+        <i class="fas fa-moon"></i>
+    </button>
+    <button class="control-btn" id="audioToggle" data-tooltip="Suara Luar Angkasa">
+        <i class="fas fa-volume-mute"></i>
+    </button>
+</div>
     </nav>
 
     <!-- HERO SECTION -->
@@ -2441,45 +2517,108 @@
         }
 
         // ============================================
-// AUDIO - File MP3 Sendiri
-// ============================================
-const audioToggle = document.getElementById('audioToggle');
-const audioVisualizer = document.getElementById('audioVisualizer');
-let spaceAudio = new Audio('backsound.mp3'); // ← GANTI NAMA FILE INI
-let isAudioPlaying = false;
+        // AUDIO - Space Ambient
+        // ============================================
+        const audioToggle = document.getElementById('audioToggle');
+        const audioVisualizer = document.getElementById('audioVisualizer');
 
-// Pengaturan audio
-spaceAudio.loop = true;
-spaceAudio.volume = 0.3;
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
 
-// Restore volume dari localStorage
-if (localStorage.getItem('audioVolume')) {
-    spaceAudio.volume = parseFloat(localStorage.getItem('audioVolume'));
-}
+        function createSpaceAmbient() {
+            initAudio();
+            const frequencies = [55, 110, 165, 220, 330]; // Deep space drone frequencies
+            
+            frequencies.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+                osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+                
+                gain.gain.setValueAtTime(0.03, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.02, audioContext.currentTime + 2);
+                
+                // LFO for movement
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                lfo.frequency.setValueAtTime(0.1 + i * 0.05, audioContext.currentTime);
+                lfoGain.gain.setValueAtTime(5, audioContext.currentTime);
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                lfo.start();
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start();
+                
+                audioOscillators.push({ osc, gain, lfo, lfoGain });
+            });
 
-audioToggle.addEventListener('click', () => {
-    if (isAudioPlaying) {
-        spaceAudio.pause();
-        audioToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
-        audioToggle.classList.remove('active');
-        audioVisualizer.classList.remove('active');
-    } else {
-        spaceAudio.play().catch(e => {
-            console.log('Audio play failed:', e);
-            alert('Klik lagi untuk memutar audio (browser memerlukan interaksi user)');
+            // Add noise for texture
+            const bufferSize = audioContext.sampleRate * 2;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.01;
+            }
+            
+            const noise = audioContext.createBufferSource();
+            noise.buffer = buffer;
+            noise.loop = true;
+            const noiseGain = audioContext.createGain();
+            noiseGain.gain.setValueAtTime(0.015, audioContext.currentTime);
+            
+            // Filter for spacey sound
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(400, audioContext.currentTime);
+            
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(audioContext.destination);
+            noise.start();
+            
+            audioOscillators.push({ osc: noise, gain: noiseGain, filter });
+        }
+
+        function stopSpaceAmbient() {
+            audioOscillators.forEach(({ osc, gain, lfo, lfoGain, filter }) => {
+                try {
+                    const now = audioContext.currentTime;
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
+                    setTimeout(() => {
+                        osc.stop();
+                        if (lfo) lfo.stop();
+                    }, 1000);
+                } catch(e) {}
+            });
+            audioOscillators = [];
+        }
+
+        audioToggle.addEventListener('click', () => {
+            if (isAudioPlaying) {
+                stopSpaceAmbient();
+                audioToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                audioToggle.classList.remove('active');
+                audioVisualizer.classList.remove('active');
+            } else {
+                createSpaceAmbient();
+                audioToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                audioToggle.classList.add('active');
+                audioVisualizer.classList.add('active');
+            }
+            isAudioPlaying = !isAudioPlaying;
+            localStorage.setItem('audioPlaying', isAudioPlaying);
         });
-        audioToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
-        audioToggle.classList.add('active');
-        audioVisualizer.classList.add('active');
-    }
-    isAudioPlaying = !isAudioPlaying;
-    localStorage.setItem('audioPlaying', isAudioPlaying);
-});
 
-// Auto-play saat load (jika sebelumnya aktif)
-if (localStorage.getItem('audioPlaying') === 'true') {
-    setTimeout(() => audioToggle.click(), 2000);
-}
+        // Restore audio state
+        if (localStorage.getItem('audioPlaying') === 'true') {
+            setTimeout(() => audioToggle.click(), 3000);
+        }
 
         // ============================================
         // NAVBAR SCROLL EFFECT
