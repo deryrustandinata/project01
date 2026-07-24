@@ -1598,16 +1598,7 @@
     padding: 0 10px;
     border-right: 1px solid var(--glass-border);
     margin-right: 5px;
-    opacity: 0;
-    width: 0;
-    overflow: hidden;
     transition: all 0.4s ease;
-}
-
-.volume-wrapper.show {
-    opacity: 1;
-    width: auto;
-    overflow: visible;
 }
 
 #volumeSlider {
@@ -1652,10 +1643,6 @@
 /* Tampilkan slider saat audio aktif */
 .control-btn.active ~ .volume-wrapper,
 .control-btn.active + .volume-wrapper,
-.volume-wrapper.active {
-    opacity: 1;
-    width: auto;
-    overflow: visible;
 }        
     </style>
 </head>
